@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Contas — Carlos Henrique</title>
+<style>
+:root{
+  --bg:#0f1224; --panel:#171b34; --panel2:#1d2140; --border:#2a2f52;
+  --text:#e9ebf7; --muted:#9aa0c3; --accent:#7c6cff; --good:#3ddc97;
+  --warn:#ffb454; --bad:#ff6b6b;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px);}
+body{height:100%; margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:20px 16px 40px;}
+h1{font-size:1.3rem; margin:0 0 2px;}
+.sub{color:var(--muted); font-size:.85rem; margin:0 0 18px;}
+.grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:16px;}
+.kpi{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px 16px;}
+.kpi .label{color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.04em;}
+.kpi .value{font-size:1.4rem; font-weight:700; margin-top:4px;}
+.kpi .tag{display:inline-block; margin-top:6px; font-size:.72rem; padding:2px 8px; border-radius:20px;}
+.tag.good{background:rgba(61,220,151,.15); color:var(--good);}
+.tag.bad{background:rgba(255,107,107,.15); color:var(--bad);}
+.tag.warn{background:rgba(255,180,84,.15); color:var(--warn);}
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:16px;}
+.panel h2{font-size:.95rem; margin:0 0 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+.panel h2 span{color:var(--muted); font-weight:400; font-size:.75rem;}
+.year-select{margin-bottom:14px;}
+.year-select label{display:block; color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;}
+.year-select select{width:100%; max-width:220px; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:10px; font-size:.9rem; font-weight:600; cursor:pointer; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239aa0c3' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>"); background-repeat:no-repeat; background-position:right 12px center;}
+.year-select select:focus{outline:2px solid var(--accent);}
+.note{color:var(--muted); font-size:.72rem; margin:-8px 0 12px;}
+.bars{display:flex; align-items:flex-end; gap:8px; height:150px; overflow-x:auto; overflow-y:visible; padding-top:18px; padding-bottom:4px;}
+.bar-col{display:flex; flex-direction:column; align-items:center; min-width:34px; flex:1;}
+.bar{width:100%; max-width:26px; border-radius:5px 5px 0 0; background:linear-gradient(180deg,var(--accent),#4f42c9); min-height:2px;}
+.bar.max{background:linear-gradient(180deg,var(--warn),#c9822e);}
+.bar.empty{background:var(--panel2); border:1px dashed var(--border);}
+.bar-val{font-size:.62rem; color:var(--muted); margin-bottom:4px;}
+.bar-lbl{font-size:.62rem; color:var(--muted); margin-top:6px;}
+.cat-row{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:.82rem;}
+.cat-name{width:150px; flex-shrink:0; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cat-track{flex:1; background:var(--panel2); border-radius:6px; height:10px; overflow:hidden;}
+.cat-fill{height:100%; background:linear-gradient(90deg,var(--accent),#a99bff); border-radius:6px;}
+.cat-val{width:88px; text-align:right; color:var(--muted); flex-shrink:0;}
+.years{display:flex; gap:8px; align-items:flex-end; height:150px; margin-top:6px; overflow-x:auto; overflow-y:visible; padding-top:18px;}
+.year-col{flex:1; min-width:42px; display:flex; flex-direction:column; align-items:center; position:relative;}
+.year-col.projected{opacity:.6;}
+.year-col.split{margin-left:14px;}
+.year-col.split::before{content:"";position:absolute; left:-10px; top:-18px; bottom:20px; border-left:1px dashed var(--border);}
+.year-bar{width:100%; max-width:40px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--accent),#4f42c9); cursor:pointer; transition:opacity .15s; min-height:4px;}
+.year-bar:hover{opacity:.85;}
+.year-bar.now{background:linear-gradient(180deg,var(--good),#1f9c6e); box-shadow:0 0 0 2px rgba(61,220,151,.25);}
+.year-bar.projected{background:repeating-linear-gradient(135deg,var(--panel2),var(--panel2) 4px,#262b52 4px,#262b52 8px); border:1px dashed var(--border);}
+.year-val{font-size:.65rem; color:var(--muted); margin-bottom:4px; font-weight:600;}
+.year-val.now{color:var(--good);}
+.year-lbl{font-size:.68rem; color:var(--muted); margin-top:6px;}
+.year-lbl.now{color:var(--text); font-weight:700;}
+.legend{display:flex; gap:16px; margin-top:12px; font-size:.7rem; color:var(--muted); flex-wrap:wrap;}
+.legend span{display:inline-flex; align-items:center; gap:5px;}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+table{width:100%; border-collapse:collapse; font-size:.8rem;}
+th,td{text-align:left; padding:7px 6px; border-bottom:1px solid var(--border);}
+th{color:var(--muted); font-weight:500; font-size:.7rem; text-transform:uppercase;}
+.foot{color:var(--muted); font-size:.72rem; text-align:center; margin-top:10px;}
+</style>
+</head>
+<body>
+<h1>Painel de Contas — Relatório de Contas Atualizadas</h1>
+<p class="sub">Dados importados da planilha do Drive · Carlos Henrique</p>
+
+<div class="grid" id="kpis"></div>
+
+<div class="panel">
+  <h2 id="barsTitle">Gastos por mês</h2>
+  <div class="year-select">
+    <label for="yearPicker">Selecione o ano</label>
+    <select id="yearPicker"></select>
+  </div>
+  <div class="note" id="yearNote"></div>
+  <div class="bars" id="bars"></div>
+</div>
+
+<div class="panel">
+  <h2 id="catsTitle">Maiores categorias — 2026 <span>acumulado no ano</span></h2>
+  <div id="cats"></div>
+</div>
+
+<div class="panel">
+  <h2>Comparativo anual <span>2020 – 2030 (planilha completa) · clique numa barra</span></h2>
+  <div class="years" id="years"></div>
+  <div class="legend">
+    <span><i style="background:linear-gradient(180deg,var(--accent),#4f42c9)"></i>Ano lançado</span>
+    <span><i style="background:linear-gradient(180deg,var(--good),#1f9c6e)"></i>Ano selecionado</span>
+    <span><i style="background:repeating-linear-gradient(135deg,var(--panel2),var(--panel2) 3px,#262b52 3px,#262b52 6px); border:1px dashed var(--border)"></i>Projetado (2027–2030)</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h2 id="tblTitle">Meses lançados</h2>
+  <table>
+    <thead><tr><th>Mês</th><th>Total</th><th>Variação</th></tr></thead>
+    <tbody id="tbl"></tbody>
+  </table>
+</div>
+
+<p class="foot">Fonte: RELATÓRIO DE CONTAS GERAIS ATUALIZADA.xlsx (Google Drive)</p>
+
+<script>
+const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+const yearData = {
+  2020: [null,null,null,null,null,null,null,null,null,null,null,1621.90],
+  2021: [3080.71,3971.25,2525.87,2518.11,3716.95,2230.52,2707.05,3206.60,3200.21,3570.90,2491.92,3555.88],
+  2022: [3987.11,4324.19,6306.57,6297.14,4288.52,5274.97,1136.32,2491.03,5758.45,2424.31,3384.66,3383.00],
+  2023: [3863.46,3596.17,6318.89,6918.16,7168.59,5317.31,6964.77,4160.22,9492.78,5847.42,5900.64,7333.68],
+  2024: [6589.25,4378.57,5164.22,4100.39,5083.14,8382.47,6118.67,3743.41,3371.30,3688.60,3819.58,2829.32],
+  2025: [3363.76,3086.17,6192.06,5211.72,5010.38,4080.78,3063.87,3756.41,3398.91,3380.29,3475.49,6650.10],
+  2026: [5885.66,4964.99,11117.54,8300.17,4816.70,4453.49,5123.42,5235.46,4706.03,5522.92,1738.25,5835.11],
+  2027: [2839.81,3165.81,6569.67,3165.81,1663.81,1373.81,1373.81,873.81,873.81,738.81,873.81,873.81],
+  2028: [2602.80,2734.24,2734.24,2734.24,2734.24,2734.24,2734.24,2734.24,2684.24,2734.24,2734.24,2734.24],
+  2029: [2515.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24,2765.24],
+  2030: [1699.24,699.24,699.24,699.24,699.24,699.24,699.24,699.24,699.24,699.24,699.24,699.24],
+};
+const catData = {
+  2020: [["NATÁLIA",411.00],["CONDOMÍNIO",265.00],["CURSO AFAM",212.00],["CURSO UNINTER",179.65],["ÁGUA",165.02],["TÊNIS",120.00],["VAGA DE GARAGEM",100.00]],
+  2021: [["PORTO SEGURO (CARTÃO/SEGURO)",3889.70],["CURSO UNINTER",3725.54],["DÍVIDA CAIXA",3660.60],["ENERGIA",3486.28],["FINANCIAMENTO MOTO",3345.54],["CONDOMÍNIO",2929.99],["DÍVIDA SANTANDER",2080.20]],
+  2022: [["BANCO DO BRASIL (CARTÃO)",19393.20],["FINANCIAMENTO PEUGEOT",5993.70],["ENERGIA",4176.66],["CONDOMÍNIO",3919.00],["PORTO SEGURO (CARTÃO/SEGURO)",2256.43],["ADIANTAMENTO 13º",2108.80],["CURSO UNINTER",1955.52]],
+  2023: [["CARTÃO DE CRÉDITO",19140.27],["FINANCIAMENTO PEUGEOT",15095.20],["EMPRÉSTIMO CONSIGNADO",12933.87],["ENERGIA",4294.22],["CONDOMÍNIO",3510.00],["CARTÃO ITAÚ",2961.63],["ADIANTAMENTO 13º",2658.62]],
+  2024: [["FINANCIAMENTO PEUGEOT",14291.72],["BANCO DO BRASIL (CARTÃO)",6426.17],["EMPRÉSTIMO CONSIGNADO",5637.42],["CARTÃO VISA FACIL/GOLD",5187.84],["CONDOMÍNIO",4504.00],["CARTÃO ITAÚ",3981.23],["ENERGIA",3854.09]],
+  2025: [["NUBANK",6430.23],["ADIANTAMENTO 13º",5800.00],["CONDOMÍNIO",5036.96],["BANCO DO BRASIL (CARTÃO)",4701.88],["EMPRÉSTIMO CONSIGNADO",4475.88],["ENERGIA",4378.81],["ALEXANDRA (CARTÃO)",4323.00]],
+  2026: [["ALEXANDRA (CARTÃO)",18167.94],["ADIANTAMENTO 13º",10992.50],["MERCADO LIVRE",7979.09],["CONDOMÍNIO",5230.67],["ENERGIA",3569.36],["SHOPPE",2819.58],["ÁGUA",2513.20],["DANIA MODAS",1997.00],["INTERNET",1638.00]],
+  2027: [["CONDOMÍNIO",5534.88],["ADIANTAMENTO 13º",4403.86],["EDVALDO",3000.00],["MÃE",3000.00],["SHOPPE",2008.00],["INTERNET",1665.00],["IPVA PEUGEOT",1450.00],["RENEGOCIAÇAO NUBANK",1230.84]],
+  2028: [["ADIANTAMENTO 13º",22000.00],["CONDOMÍNIO",5534.88],["FINANCIAMENTO PEUGEOT",1800.00],["INTERNET",1440.00],["CELULAR CLARO",816.00],["TV FUN PLAY",420.00],["IPTU APARTAMENTO",365.99]],
+  2029: [["ADIANTAMENTO 13º",22000.00],["CONDOMÍNIO",5534.88],["INTERNET",1800.00],["FINANCIAMENTO PEUGEOT",1400.00],["CELULAR CLARO",744.00],["RASTREADOR",684.00],["TV FUN PLAY",420.00]],
+  2030: [["CONDOMÍNIO",5534.88],["INTERNET",1440.00],["FINANCIAMENTO PEUGEOT",1000.00],["CELULAR CLARO",816.00],["RASTREADOR",600.00]],
+};
+const partialYears = {2020:"só dezembro lançado", 2027:"lançamentos futuros/projetados, água e energia ainda em branco", 2028:"projetado", 2029:"projetado", 2030:"projetado, incompleto"};
+const years = Object.keys(yearData).map(Number);
+let current = 2026;
+
+function fmt(v){ return v==null ? "—" : "R$ " + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function yearTotal(y){ return yearData[y].reduce((a,b)=>a+(b||0),0); }
+
+function renderPicker(){
+  const el = document.getElementById('yearPicker');
+  if(!el.dataset.built){
+    years.forEach(y=>{
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      el.appendChild(opt);
+    });
+    el.onchange = ()=>{ current = Number(el.value); renderAll(); };
+    el.dataset.built = '1';
+  }
+  el.value = current;
+}
+
+function renderKPIs(){
+  const vals = yearData[current];
+  const known = vals.map((v,i)=>({v,i})).filter(x=>x.v!=null);
+  const total = yearTotal(current);
+  const media = total/known.length;
+  const maxM = known.reduce((a,b)=>b.v>a.v?b:a);
+  const minM = known.reduce((a,b)=>b.v<a.v?b:a);
+  const prevTotal = yearData[current-1] ? yearTotal(current-1) : null;
+  const variation = prevTotal ? (((total-prevTotal)/prevTotal)*100).toFixed(1) : null;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="label">Total ${current}</div><div class="value">${fmt(total)}</div>
+      ${variation!==null?`<span class="tag ${variation>=0?'warn':'good'}">${variation>=0?'↑':'↓'} ${Math.abs(variation)}% vs ${current-1}</span>`:''}</div>
+    <div class="kpi"><div class="label">Média mensal</div><div class="value">${fmt(media)}</div></div>
+    <div class="kpi"><div class="label">Mês mais caro</div><div class="value">${meses[maxM.i]}</div><span class="tag bad">${fmt(maxM.v)}</span></div>
+    <div class="kpi"><div class="label">Mês mais barato</div><div class="value">${meses[minM.i]}</div><span class="tag good">${fmt(minM.v)}</span></div>
+  `;
+}
+
+function renderBars(){
+  const vals = yearData[current];
+  const max = Math.max(...vals.filter(v=>v!=null));
+  const el = document.getElementById('bars'); el.innerHTML='';
+  vals.forEach((v,i)=>{
+    const col = document.createElement('div'); col.className='bar-col';
+    if(v==null){
+      col.innerHTML = `<div class="bar-val">—</div><div class="bar empty" style="height:10px"></div><div class="bar-lbl">${meses[i]}</div>`;
+    } else {
+      const h = Math.max(6,(v/max)*105);
+      col.innerHTML = `<div class="bar-val">${(v/1000).toFixed(1)}k</div><div class="bar${v===max?' max':''}" style="height:${h}px"></div><div class="bar-lbl">${meses[i]}</div>`;
+    }
+    el.appendChild(col);
+  });
+  document.getElementById('barsTitle').innerHTML = `Gastos por mês — ${current} <span>total ${fmt(yearTotal(current))}</span>`;
+  document.getElementById('tblTitle').textContent = `Meses lançados — ${current}`;
+  document.getElementById('yearNote').textContent = partialYears[current] ? "⚠ " + partialYears[current] : "";
+}
+
+function renderYearsChart(){
+  const el = document.getElementById('years'); el.innerHTML='';
+  const totals = years.map(y=>yearTotal(y));
+  const yMax = Math.max(...totals);
+  years.forEach((y,i)=>{
+    const t = totals[i];
+    const h = Math.max(6,(t/yMax)*115);
+    const isProjected = y >= 2027;
+    const isNow = y===current;
+    const col = document.createElement('div');
+    col.className = 'year-col' + (isProjected?' projected':'') + (y===2027?' split':'');
+    col.innerHTML = `<div class="year-val${isNow?' now':''}">${(t/1000).toFixed(1)}k</div>
+      <div class="year-bar${isNow?' now':''}${isProjected?' projected':''}" style="height:${h}px" onclick="current=${y};document.getElementById('yearPicker').value=${y};renderAll()"></div>
+      <div class="year-lbl${isNow?' now':''}">${y}</div>`;
+    el.appendChild(col);
+  });
+}
+
+function renderCats(){
+  const cats = catData[current] || [];
+  document.getElementById('catsTitle').innerHTML = `Maiores categorias — ${current} <span>acumulado no ano</span>`;
+  const el = document.getElementById('cats'); el.innerHTML='';
+  if(cats.length===0){ el.innerHTML = '<div class="note">Sem categorias detalhadas para este ano.</div>'; return; }
+  const catMax = Math.max(...cats.map(c=>c[1]));
+  cats.forEach(([name,val])=>{
+    const w = (val/catMax)*100;
+    const row = document.createElement('div'); row.className='cat-row';
+    row.innerHTML = `<div class="cat-name">${name}</div><div class="cat-track"><div class="cat-fill" style="width:${w}%"></div></div><div class="cat-val">${fmt(val)}</div>`;
+    el.appendChild(row);
+  });
+}
+
+function renderTable(){
+  const vals = yearData[current];
+  const tbl = document.getElementById('tbl'); tbl.innerHTML='';
+  vals.forEach((v,i)=>{
+    const prev = i>0 ? vals[i-1] : null;
+    let diff = '—';
+    if(prev!=null && v!=null){
+      const pct = (((v-prev)/prev)*100).toFixed(1);
+      diff = (pct>=0?'▲ ':'▼ ')+Math.abs(pct)+'%';
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${meses[i]}/${current}</td><td>${fmt(v)}</td><td>${diff}</td>`;
+    tbl.appendChild(tr);
+  });
+}
+
+function renderAll(){
+  renderPicker(); renderKPIs(); renderBars(); renderYearsChart(); renderCats(); renderTable();
+}
+
+var LIVE_DATA_URL = "https://script.google.com/macros/s/AKfycbxF1yA258eh31eWrge51Z6i5uGVKR5hHf5w2I5CPYyWZ4El2XW-QGT9Wn3i03QdYCay/exec";
+var liveStatusEl = null;
+
+function setLiveStatus(msg, ok){
+  if(!liveStatusEl){
+    liveStatusEl = document.createElement('div');
+    liveStatusEl.style.cssText = "text-align:center;font-size:.72rem;margin:-10px 0 16px;";
+    document.querySelector('.sub').insertAdjacentElement('afterend', liveStatusEl);
+  }
+  liveStatusEl.textContent = msg;
+  liveStatusEl.style.color = ok ? "var(--good)" : "var(--muted)";
+}
+
+function mergeLiveData(json){
+  if(json && json.yearData){
+    Object.keys(json.yearData).forEach(function(y){
+      yearData[y] = json.yearData[y];
+    });
+  }
+  if(json && json.catData){
+    Object.keys(json.catData).forEach(function(y){
+      catData[y] = json.catData[y];
+    });
+  }
+}
+
+renderAll();
+
+fetch(LIVE_DATA_URL)
+  .then(function(r){ return r.json(); })
+  .then(function(json){
+    mergeLiveData(json);
+    var when = json.generatedAt ? new Date(json.generatedAt).toLocaleString('pt-BR') : '';
+    setLiveStatus("Dados ao vivo da planilha" + (when ? " · atualizado em " + when : ""), true);
+    renderAll();
+  })
+  .catch(function(err){
+    setLiveStatus("Não foi possível buscar dados ao vivo — mostrando última versão salva", false);
+  });
+</script>
+</body>
+</html>
